@@ -44,11 +44,11 @@ static int ctrl_thread(int, char **)
         vehicle_thrust_setpoint_s vts{};
         vts.timestamp = now;
         vts.timestamp_sample = now;
-        // 将占空比映射为机体系 thrust 向量。默认沿机体 +Z 向下（PX4 约定），
-        // 若需要“向上”推力，应对 Z 分量取负号。
-        vts.xyz[0] = 0.f;
+        // 固定翼：将占空比映射为机体系 X 轴正向推力（前向）。
+        // 若你的推进器安装方向相反，请对 X 分量取负号。
+        vts.xyz[0] = math::constrain(hold_duty, 0.f, 1.f);
         vts.xyz[1] = 0.f;
-        vts.xyz[2] = -math::constrain(hold_duty, 0.f, 1.f);
+        vts.xyz[2] = 0.f;
         thrust_pub.publish(vts);
 	}
 
