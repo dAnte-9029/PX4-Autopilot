@@ -7,7 +7,7 @@
 #include <uORB/Subscription.hpp>
 #include <mathlib/math/Functions.hpp>
 #include <uORB/topics/stm32_setpoint.h>
-#include <uORB/topics/actuator_motors.h>
+#include <uORB/topics/vehicle_thrust_setpoint.h>
 
 extern "C" __EXPORT int stm32_motor_ctrl_main(int argc, char *argv[]);
 
@@ -16,8 +16,8 @@ static volatile bool should_exit = false;
 
 static int ctrl_thread(int, char **)
 {
-	uORB::Subscription sp_sub{ORB_ID(stm32_setpoint)};
-	uORB::Publication<actuator_motors_s> motors_pub{ORB_ID(actuator_motors)};
+    uORB::Subscription sp_sub{ORB_ID(stm32_setpoint)};
+    uORB::Publication<vehicle_thrust_setpoint_s> thrust_pub{ORB_ID(vehicle_thrust_setpoint)};
 
 	hrt_abstime last_sp_ts = 0;
 	stm32_setpoint_s sp{};
@@ -41,11 +41,15 @@ static int ctrl_thread(int, char **)
 			}
 		}
 
-		actuator_motors_s out{};
-		out.timestamp = now;
-		// 简单示例：只驱动 Motor1（索引0），按需扩展映射
-		out.control[0] = math::constrain(hold_duty, 0.f, 1.f);
-		motors_pub.publish(out);
+        vehicle_thrust_setpoint_s vts{};
+        vts.timestamp = now;
+        vts.timestamp_sample = now;
+        // 将占空比映射为机体系 thrust 向量。默认沿机体 +Z 向下（PX4 约定），
+        // 若需要“向上”推力，应对 Z 分量取负号。
+        vts.xyz[0] = 0.f;
+        vts.xyz[1] = 0.f;
+        vts.xyz[2] = -math::constrain(hold_duty, 0.f, 1.f);
+        thrust_pub.publish(vts);
 	}
 
 	return 0;
