@@ -1,0 +1,4 @@
+menuconfig EXAMPLES_ARDUINO_BRIDGE
+	bool "arduino_bridge"
+	default n
+
